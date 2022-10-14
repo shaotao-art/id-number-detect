@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import math
 
-DEBUG = False
+DEBUG = True
 
 
 def rotate_img(image, angle, center = None, scale = 1.0):
@@ -154,7 +154,7 @@ def get_id_number_contour(cnt_lst, img):
 
 
 
-def high_resolution_number(file_path, theta, ratio_lst):
+def high_resolution_number(file_path, theta, ratio_lst, save_path = 'final_number.jpg'):
     """
     get high resolution id number image from origin img
     """
@@ -163,7 +163,7 @@ def high_resolution_number(file_path, theta, ratio_lst):
     w, h = img.shape[:2]
     up, down, left, right = int(ratio_lst[0] * h), int(ratio_lst[1] * h), int(ratio_lst[2] * w), int(ratio_lst[3] * w)
     patch = img[up:down, left:right]
-    cv2.imwrite('final_number.jpg', patch) 
+    cv2.imwrite(save_path, patch) 
 
 
 
@@ -172,22 +172,35 @@ def get_rotate_img_degree(img):
     compute rotate degree for horized img
     """
     #边缘检测
-    canny = cv2.Canny(img,50,150)
+    canny = cv2.Canny(img, 50, 150)
     #霍夫变换得到线条
     lines = cv2.HoughLinesP(canny, 0.8, np.pi / 180, 90, minLineLength = 100, maxLineGap = 10)
+    
+    if DEBUG == True:
+        cv2.imshow('canny', canny)
+        cv2.waitKey()
     #画出线条
     for line in lines:
         x1, y1, x2, y2 = line[0]
+        if DEBUG == True:
+            cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+    if DEBUG == True:
+        cv2.imshow('hough', img)
+        cv2.waitKey()
 
     # 计算角度,因为x轴向右，y轴向下，所有计算的斜率是常规下斜率的相反数，我们就用这个斜率（旋转角度）进行旋转
-    k = float(y1-y2)/(x1-x2)
+    k = float(y1 - y2) / (x1 - x2)
     theta = np.degrees(math.atan(k))
     return theta
 
-def main(file_path):
+def main(file_path, save_path, use_rotate = False):
     img = read_img(file_path)
     gray = gray_scale(img)
-    theta = get_rotate_img_degree(gray)
+    if use_rotate == True:
+        theta = get_rotate_img_degree(gray)
+    else:
+        theta = 0
     gray = rotate_img(gray, theta)
     rotated_img = rotate_img(img, theta)
     eroded_img = erod(gray)
@@ -195,8 +208,8 @@ def main(file_path):
     contours = get_contours(binary_img)
     cnt_lst = anly_contours(rotated_img, contours)
     ratio_lst = get_id_number_contour(cnt_lst, rotated_img)
-    high_resolution_number(file_path, theta, ratio_lst)
+    high_resolution_number(file_path, theta, ratio_lst, save_path)
 
 
 if __name__ == "__main__": 
-    main('tao.jpg')
+    main('test6.jpg', 'out6.jpg')
