@@ -1,8 +1,9 @@
 import numpy as np
+# test github
 import cv2
 import math
 
-DEBUG = True
+DEBUG = False
 
 
 def rotate_img(image, angle, center = None, scale = 1.0):
