@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import math
+# i am answer why we did not solve hard situation, beacause we can get a high quality id card image without perpective disorder by design a good fontend to capture a good iamge
 
 DEBUG = True
 
