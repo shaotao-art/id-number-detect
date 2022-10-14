@@ -1,9 +1,10 @@
 import numpy as np
+# test github
 import cv2
 import math
 # i am answer why we did not solve hard situation, beacause we can get a high quality id card image without perpective disorder by design a good fontend to capture a good iamge
 
-DEBUG = True
+DEBUG = False
 
 
 def rotate_img(image, angle, center = None, scale = 1.0):
