@@ -4,7 +4,11 @@ import cv2
 import math
 # i am answer why we did not solve hard situation, beacause we can get a high quality id card image without perpective disorder by design a good fontend to capture a good iamge
 
-DEBUG = False
+DEBUG = True
+
+def _SHOW(win_name, img):
+    cv2.imshow(win_name, img)
+    cv2.waitKey()
 
 
 def rotate_img(image, angle, center = None, scale = 1.0):
@@ -18,8 +22,7 @@ def rotate_img(image, angle, center = None, scale = 1.0):
     out = cv2.warpAffine(image, wrapMat, (h * 2, w * 2))
 
     if DEBUG == True:
-        cv2.imshow('rotated img', out)
-        cv2.waitKey()
+        _SHOW('rotated img', out)
     return out
 
 
@@ -37,8 +40,8 @@ def read_img(file_path):
     r_w, r_h = int(scale_factor * w), int(scale_factor * h)
     img = cv2.resize(img, dsize = [r_h, r_w])
     if DEBUG == True:
-        cv2.imshow('resized img', img)
-        cv2.waitKey() 
+        _SHOW('resized img', img)
+
     print(f'origin img size {w, h}, resized img size {r_w, r_h}')  
     return img
 
@@ -60,8 +63,8 @@ def erod(gray, kernel_size = 7):
     erode_Img = cv2.erode(gray, kernel)
     
     if DEBUG == True:
-        cv2.imshow('erode', erode_Img)
-        cv2.waitKey()
+        _SHOW('erode', erode_Img)
+
     return erode_Img
 
 
@@ -72,8 +75,8 @@ def thres_img(img, thres = 100):
     _, thresh = cv2.threshold(img, thres, 255, cv2.THRESH_BINARY)
     
     if DEBUG == True:
-        cv2.imshow('binary img', thresh)
-        cv2.waitKey()
+        _SHOW('binary img', thresh)
+
     return thresh
 
 
@@ -86,8 +89,8 @@ def get_contours(img):
     if DEBUG == True:
         tmp = np.zeros_like(img)
         res = cv2.drawContours(tmp, contours, -1, (250, 255, 255), 1)
-        cv2.imshow('contours img', res)
-        cv2.waitKey()
+        _SHOW('contours img', res)
+
     return contours
 
 
@@ -107,8 +110,8 @@ def anly_contours(img, contours):
     if DEBUG == True:
         for cnt in res_lst:
             res = cv2.drawContours(img, [cnt], -1, (250, 250, 255), 1)
-        cv2.imshow('processed contours img', res)
-        cv2.waitKey()
+        _SHOW('processed contours img', res)
+
     print(f'get final {len(res_lst)} contours')
     return res_lst
     
@@ -150,8 +153,8 @@ def get_id_number_contour(cnt_lst, img):
     if DEBUG == True:
         up, down, left, right = int(lst[max_idx][0] * h), int(lst[max_idx][1] * h), int(lst[max_idx][2] * w), int(lst[max_idx][3] * w)
         cv2.rectangle(img, [left, up], [right, down], (111, 0, 255), 2)
-        cv2.imshow('id number rectange', img)
-        cv2.waitKey()
+        _SHOW('id number rectange', img)
+
     return lst[max_idx]
 
 
@@ -179,8 +182,8 @@ def get_rotate_img_degree(img):
     lines = cv2.HoughLinesP(canny, 0.8, np.pi / 180, 90, minLineLength = 100, maxLineGap = 10)
     
     if DEBUG == True:
-        cv2.imshow('canny', canny)
-        cv2.waitKey()
+        _SHOW('canny', canny)
+
     #画出线条
     for line in lines:
         x1, y1, x2, y2 = line[0]
@@ -188,8 +191,7 @@ def get_rotate_img_degree(img):
             cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
     if DEBUG == True:
-        cv2.imshow('hough', img)
-        cv2.waitKey()
+        _SHOW('hough', img)
 
     # 计算角度,因为x轴向右，y轴向下，所有计算的斜率是常规下斜率的相反数，我们就用这个斜率（旋转角度）进行旋转
     k = float(y1 - y2) / (x1 - x2)
@@ -214,4 +216,4 @@ def main(file_path, save_path, use_rotate = False):
 
 
 if __name__ == "__main__": 
-    main('test6.jpg', 'out6.jpg')
+    main('sample.jpg', 'sample_out.jpg')
