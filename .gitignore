@@ -2,3 +2,7 @@ __pycache__
 *.jpg
 data
 ckp
+fa.py
+TEST_IMG
+number_cut_out
+tmp_out
