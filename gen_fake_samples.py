@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
-import glob
 import os
+from matplotlib import pyplot as plt
 
 def gen_background(size, mu, sigma):
     '''
@@ -165,70 +165,30 @@ def gen_char_img(char, angle, back_mean, back_var, fore_mean, fore_var, font_pat
     
     return out_img
 
-
-def gen_batch_examples(batch_size, img_size, font_dir, output_path = None):
-    '''
-    Function: genrate a batch of examples
-    Input:
-        batch_size:   int, batch size of examples
-        img_size:     int, image size of each examples
-        font_dir:     str, directory for looking true type fonts
-
-    output:
-        X:  batch examples with shape(batch_size, img_size, img_size)
-        Y:  label with shape(batch_size, 1)
-    '''
-    char_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'X']
-    max_angle = 10
-    min_back_mean = 60
-    max_back_var_ratio = 0.3
-    max_fore_mean = 200
-    max_fore_var_ratio = 0.3
-    font_list = glob.glob(font_dir + "/*.ttf")
-
-    margin_list = [7, 8, 9, 10]
-    probability = [1 / len(margin_list)] * len(margin_list)
-
-    X = np.zeros((batch_size, img_size, img_size))
-    Y = np.zeros((batch_size, 1))
-
-    if (output_path != None) and (not os.path.exists(output_path)):
-        os.makedirs(output_path)
-
-    for i in range(batch_size):
-        y = np.random.randint(len(char_list))
-        char = char_list[y]
-        angle = max_angle * (np.random.uniform() * 2.0 - 1.0)
-        
-        back_mean = np.random.randint(min_back_mean, 256)
-        back_var_ratio = np.random.uniform() * max_back_var_ratio
-        back_var = back_mean * back_var_ratio
-
-        fore_mean = np.random.randint(0, max_fore_mean)
-        if (back_mean - fore_mean < 30):
-            fore_mean = back_mean / 2
-        fore_var_ratio = np.random.uniform() * max_fore_var_ratio
-        fore_var = fore_mean * fore_var_ratio
-
-        font_path = font_list[np.random.randint(len(font_list))]
-        margin = np.random.choice(margin_list, size = 4, p = probability).tolist()
-
-        char_img = gen_char_img(char, angle, back_mean, back_var, fore_mean, fore_var, font_path, img_size, margin)
-        X[i,:,:] = np.array(char_img)
-        Y[i, 0] = y
-
-        if (output_path != None):
-            char_img.save(output_path + "/" + str(i) + ".png") 
-
-    return X, Y
+# 0 纯黑 1 白色
+def gen_samples(char, num_samples, output_dir, angle_high=7, margin_lst=[6, 7, 8, 9]):
+    for _ in range(num_samples):
+        angle = np.random.randint(low=0, high=angle_high)
+        margin = int(np.random.choice(margin_lst, size=(1)))
+        img = gen_char_img(char=char, 
+                    angle=angle, 
+                    back_mean=0, 
+                    back_var=0, 
+                    fore_mean=255, 
+                    fore_var=0, 
+                    font_path='./fonts/ocr-font.ttf', 
+                    out_size = 32, 
+                    margin = (margin, margin, margin, margin))
+        plt.imsave(os.path.join(output_dir ,f'{np.random.randint(10000)}.png'), img)
+    print(f'generating char: {char}, num samples gen: {num_samples}')
 
 
-from matplotlib import pyplot as plt
-b_s = 16
-X, y = gen_batch_examples(b_s, 32, './fonts', './tmp_out')
-x = [x.astype(np.int0) for x in X]
-for i in range(b_s):
-    plt.subplot(4, b_s // 4, i + 1)
-    plt.imshow(X[i], cmap="binary")
-    plt.title(str(y[i]))
-plt.show()
+def gen_dataset(char_lst = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'X'], num_samples_for_each = 2000):
+    for x in char_lst:
+        fold_path = f'./data_gen/char_{x}'
+        os.makedirs(fold_path, exist_ok=True)
+        gen_samples(x, num_samples_for_each, fold_path)
+
+
+if __name__ == "__main__":
+    gen_dataset()
