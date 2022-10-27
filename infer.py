@@ -40,8 +40,8 @@ def infer(model, img):
         res = pred.argmax(1)
     return res
 
-def recognize_numbers(root_path):
-    model = get_model()
+def recognize_numbers(root_path, model_save_path='./ckp/model.ckp'):
+    model = get_model(model_save_path)
     T = get_T()
     imgs = prepare_imgs(T, root_path)
     res = infer(model, imgs)

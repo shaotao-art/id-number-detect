@@ -1,3 +1,4 @@
+from ast import arg
 from pre_process import get_numbers
 from get_column_num import get_each_number
 from infer import recognize_numbers
@@ -7,6 +8,7 @@ import argparse
 def arg_parse():
     args = argparse.ArgumentParser()
     args.add_argument('--img_path', '-p', type=str, required=True, help="输入身份证照片路径")
+    args.add_argument('--model_path', '-m', type=str, required=False, help="输入模型路径")
     args_dict = vars(args.parse_args())
     return args_dict
 
@@ -20,7 +22,10 @@ def run(args_dict):
 
     get_numbers(file_path = args_dict['img_path'], save_path = id_numbers_path, use_rotate = False)
     get_each_number(path = id_numbers_path, save_path = each_number_save_path)
-    res = recognize_numbers(each_number_save_path)
+    if args_dict['model_path'] is not None:
+        res = recognize_numbers(each_number_save_path, args_dict['model_path'])
+    else:
+        res = recognize_numbers(each_number_save_path)
     return res
 
 if __name__ == "__main__":

@@ -18,9 +18,19 @@
 
 
 ## 运行
-    python run.py -p path_to_img_to_be_recognized
-    showcase: python run.py -p ./test_imgs/sample.jpg
-
+1. 下载 [model](https://drive.google.com/file/d/1QtiRzL0XNPF-r6QzppHvar-4QLwX2au_/view?usp=sharing)
+2. 运行
+```
+usage: run.py [-h] --img_path IMG_PATH [--model_path MODEL_PATH]
+optional arguments:
+    -h, --help            show this help message and exit
+    --img_path IMG_PATH, -p IMG_PATH
+                            输入身份证照片路径
+    --model_path MODEL_PATH, -m MODEL_PATH
+                            输入模型路径
+# 示例
+python run.py -p ./test_imgs/sample.jpg -mp ./model.ckp
+```
 
 ## 要点提示
 1. 使用深度学习对身份证号码的印刷体进行识别，训练数据的获取方式是：通过字体渲染自己生成数据,而不是收集数据，详见`gen_fake_sample.py`。
