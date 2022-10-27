@@ -1,10 +1,8 @@
 import numpy as np
-# test github
 import cv2
 import math
-# i am answer why we did not solve hard situation, beacause we can get a high quality id card image without perpective disorder by design a good fontend to capture a good iamge
 
-DEBUG = True
+DEBUG = False
 
 def _SHOW(win_name, img):
     cv2.imshow(win_name, img)
@@ -30,7 +28,6 @@ def read_img(file_path):
     """
     read img, resize to max_edge == 300
     """
-    #读取图片，灰度化
     img = cv2.imread(file_path)
     print(f'reading img from {file_path}')
     w, h = img.shape[:2]
@@ -159,7 +156,7 @@ def get_id_number_contour(cnt_lst, img):
 
 
 
-def high_resolution_number(file_path, theta, ratio_lst, save_path = 'final_number.jpg'):
+def high_resolution_number(file_path, theta, ratio_lst, save_path):
     """
     get high resolution id number image from origin img
     """
@@ -176,15 +173,12 @@ def get_rotate_img_degree(img):
     """
     compute rotate degree for horized img
     """
-    #边缘检测
     canny = cv2.Canny(img, 50, 150)
-    #霍夫变换得到线条
     lines = cv2.HoughLinesP(canny, 0.8, np.pi / 180, 90, minLineLength = 100, maxLineGap = 10)
     
     if DEBUG == True:
         _SHOW('canny', canny)
 
-    #画出线条
     for line in lines:
         x1, y1, x2, y2 = line[0]
         if DEBUG == True:
@@ -193,12 +187,15 @@ def get_rotate_img_degree(img):
     if DEBUG == True:
         _SHOW('hough', img)
 
-    # 计算角度,因为x轴向右，y轴向下，所有计算的斜率是常规下斜率的相反数，我们就用这个斜率（旋转角度）进行旋转
     k = float(y1 - y2) / (x1 - x2)
     theta = np.degrees(math.atan(k))
     return theta
 
-def main(file_path, save_path, use_rotate = False):
+
+def get_numbers(file_path, save_path, use_rotate = False):
+    """
+    main function for this py file
+    """
     img = read_img(file_path)
     gray = gray_scale(img)
     if use_rotate == True:
@@ -216,4 +213,4 @@ def main(file_path, save_path, use_rotate = False):
 
 
 if __name__ == "__main__": 
-    main('sample.jpg', 'sample_out.jpg')
+    get_numbers('./TEST_IMG/sample.jpg', './TEST_IMG/sample_out.jpg')
