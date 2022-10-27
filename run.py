@@ -1,5 +1,5 @@
 from pre_process import get_numbers
-from getColumnNum import get_each_number
+from get_column_num import get_each_number
 from infer import recognize_numbers
 import os
 import argparse
