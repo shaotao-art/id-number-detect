@@ -19,6 +19,7 @@
 
 ## 运行
     python run.py -p path_to_img_to_be_recognized
+    showcase: python run.py -p ./test_imgs/sample.jpg
 
 
 ## 要点提示
