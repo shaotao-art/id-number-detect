@@ -1,3 +1,5 @@
+import cmath
+from filecmp import cmp
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 import os
@@ -166,20 +168,25 @@ def gen_char_img(char, angle, back_mean, back_var, fore_mean, fore_var, font_pat
     return out_img
 
 # 0 纯黑 1 白色
-def gen_samples(char, num_samples, output_dir, angle_high=7, margin_lst=[6, 7, 8, 9]):
+def gen_samples(char, num_samples, output_dir, angle_high=7):
     for _ in range(num_samples):
         angle = np.random.randint(low=0, high=angle_high)
-        margin = int(np.random.choice(margin_lst, size=(1)))
+
+        margin_l = np.random.randint(7, 15)
+        margin_r = np.random.randint(7, 15)
+        margin_u = np.random.randint(0, 25)
+        margin_d = np.random.randint(0, 25)
+
         img = gen_char_img(char=char, 
                     angle=angle, 
-                    back_mean=0, 
+                    back_mean=255, 
                     back_var=0, 
-                    fore_mean=255, 
+                    fore_mean=0, 
                     fore_var=0, 
                     font_path='./fonts/ocr-font.ttf', 
-                    out_size = 32, 
-                    margin = (margin, margin, margin, margin))
-        plt.imsave(os.path.join(output_dir ,f'{np.random.randint(10000)}.png'), img)
+                    out_size = 28, 
+                    margin = (margin_l, margin_u, margin_r, margin_d))
+        plt.imsave(os.path.join(output_dir ,f'{np.random.randint(10000)}.jpg'), img, cmap = "binary")
     print(f'generating char: {char}, num samples gen: {num_samples}')
 
 
@@ -191,4 +198,4 @@ def gen_dataset(char_lst = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'X
 
 
 if __name__ == "__main__":
-    gen_dataset()
+    gen_dataset(num_samples_for_each=2000)
