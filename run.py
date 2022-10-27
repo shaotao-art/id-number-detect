@@ -4,11 +4,13 @@ from infer import recognize_numbers
 import os
 import argparse
 
-def run():
+def arg_parse():
     args = argparse.ArgumentParser()
     args.add_argument('--img_path', '-p', type=str, required=True, help="输入身份证照片路径")
     args_dict = vars(args.parse_args())
-    
+    return args_dict
+
+def run(args_dict):
     tmp_dir = './tmp_run'
     id_numbers_path = os.path.join(tmp_dir, 'id_numbers.jpg')
     each_number_save_path = os.path.join(tmp_dir, 'numbers')
@@ -18,7 +20,9 @@ def run():
 
     get_numbers(file_path = args_dict['img_path'], save_path = id_numbers_path, use_rotate = False)
     get_each_number(path = id_numbers_path, save_path = each_number_save_path)
-    recognize_numbers(each_number_save_path)
+    res = recognize_numbers(each_number_save_path)
+    return res
 
 if __name__ == "__main__":
-    run()
+    args = arg_parse()
+    run(args)
