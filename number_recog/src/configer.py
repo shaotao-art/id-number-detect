@@ -3,8 +3,8 @@ import torch
 class Configer:
     def __init__(self) -> None:
         self.params = {
-            'device': torch.device('mps'),
-            'num_epoch': 100,
+            'device': 'mps',
+            'num_epoch': 20,
             'l_r': 1e-4,
             'b_s': 64,
             'num_workers': 2,

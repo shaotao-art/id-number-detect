@@ -2,8 +2,8 @@ import torch
 
 def train_step(model, batch, criterion, device):
     x, y = batch
-    x, y = x.squeeze().to(device), y.to(device)
-
+    x, y = x.to(device), y.to(device)
+    
     pred = model(x)
     loss = criterion(pred, y)
     return loss
