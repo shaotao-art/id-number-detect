@@ -1,25 +1,29 @@
-from numbers import Rational
 import cv2
 import numpy as np
-# 反相灰度图，将黑白阈值颠倒
+from matplotlib import pyplot as plt
+import os
+
+DEBUG = False
+
+def read_img(path):
+    return cv2.imread(path)
+
+
 def accessPiexl(img):
-    height = img.shape[0]
-    width = img.shape[1]
-    for i in range(height):
-       for j in range(width):
-           img[i][j] = 255 - img[i][j]
-    return img
+    return 255 - img
 
 # 反相二值化图像
-def accessBinary(img, threshold=128):
+def accessBinary(img, threshold=128, dial_size = 0):
     img = accessPiexl(img)
-    # 边缘膨胀，不加也可以
-    # kernel = np.ones((3, 3), np.uint8)
-    # img = cv2.dilate(img, kernel, iterations=1)
+
+    if dial_size > 0:
+        kernel = np.ones((3, 3), np.uint8)
+        img = cv2.dilate(img, kernel, iterations=1)
+
     _, img = cv2.threshold(img, threshold, 0, cv2.THRESH_TOZERO)
     return img
 
-# 根据长向量找出顶点
+
 def extractPeek(array_vals, min_vals=10, min_rect=20):
     extrackPoints = []
     startPoint = None
@@ -35,67 +39,54 @@ def extractPeek(array_vals, min_vals=10, min_rect=20):
             startPoint = None
             endPoint = None
 
-    # 剔除一些噪点
+
     for point in extrackPoints:
         if point[1] - point[0] < min_rect:
             extrackPoints.remove(point)
     return extrackPoints
-# 寻找边缘，返回边框的左上角和右下角（利用直方图寻找边缘算法（需行对齐））
 
-def findBorderHistogram(path):
-    list = []
-    borders = []
-    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+
+def findBorderHistogram(img):
+    lst = []
+    width_lst = []
+    out = []
     img = accessBinary(img)
-    # 行扫描
+    # row scan
     hori_vals = np.sum(img, axis=1)
     hori_points = extractPeek(hori_vals)
-    # 根据每一行来扫描列
+    # col scan
     for hori_point in hori_points:
         extractImg = img[hori_point[0]:hori_point[1], :]
         vec_vals = np.sum(extractImg, axis=0)
         vec_points = extractPeek(vec_vals, min_rect=0)
         for vect_point in vec_points:
-            border = [(vect_point[0] - vect_point[1]), (vect_point[0], hori_point[0]), (vect_point[1], hori_point[1])]
-            list.append(border)
-        list.sort(key=lambda range: range[0])
-        for range in list[0:18]:
-            borders.append(range[1:])
-        # print(len(borders))
-    return img, borders
+            width_lst.append(vect_point[0] - vect_point[1])
+            border = [(vect_point[0], hori_point[0]), (vect_point[1], hori_point[1])]
+            lst.append(border)
+        # choose max 18 for 18 number
+        width_lst = np.array(width_lst)
+        sorted_width = np.argsort(width_lst)[:18]
+        for i in range(len(lst)):
+            if i in sorted_width:
+                out.append(lst[i])
 
-# 切割结果并且修正分辨率
-def getCut(img,borders):
-    for i, border in enumerate(borders):
-        newimg = np.zeros((32,32))
-        imgCut = img[border[0][1]:border[1][1], border[0][0]:border[1][0]].copy()
-        img_rows, img_cols = imgCut.shape[:2]
-        resize_scale = np.max(imgCut.shape[:2])
-        resized_img = cv2.resize(imgCut, (int(img_cols * 32 / resize_scale), int(img_rows * 32 / resize_scale)))
-        img_rows, img_cols = resized_img.shape[:2]
-        offset_rows = (32 - img_rows)//2
-        offset_cols = (32 - img_cols)//2
-        for x in range(img_rows):
-            for y in range(img_cols):
-                newimg[x+offset_rows, y+offset_cols] = resized_img[x,y]
-        cv2.imwrite(r'./img{}.jpg'.format(i), newimg)
+    return img, out
 
-# 显示结果及边框
-def showResults(path,borders):
+
+def showResults(path, borders, save_res = True):
     img = cv2.imread(path)
-    # 绘制
-    # print(img.shape)
-    # print(borders)
     for i, border in enumerate(borders):
         cv2.rectangle(img, border[0], border[1], (0, 0, 255))
-        # if results:
-        #     cv2.putText(img, str(results[i]), border[0], cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 255, 0), 1)
-        #cv2.circle(img, border[0], 1, (0, 255, 0), 0)
     cv2.imshow('test', img)
-    cv2.imwrite(r'../image/imagelist/get.jpg',img)
+    if save_res == True:
+        cv2.imwrite('./number_cut.jpg', img)
     cv2.waitKey(0)
 
-def gen_res(img, borders):
+
+def gen_res(img, borders, save_path):
+    """
+    get each number in img accord to borders and save res to file
+    """
     res = []
     for i, border in enumerate(borders):
         newimg = np.zeros((32,32))
@@ -106,19 +97,36 @@ def gen_res(img, borders):
         imgCut = cv2.resize(imgCut, (new_w, 32))
         edge_w = (32 - new_w) // 2
         newimg[:, edge_w:edge_w + new_w] = imgCut
-        newimg = 1 - newimg
+        if save_path is not None:
+            number_path = os.path.join(save_path, f'img_{i}.jpg')
+            print(f'saving number img to {number_path}')
+            cv2.imwrite(number_path, newimg)
         res.append(newimg)
     return res
 
 
+def get_each_number(path, save_path=None):
+    """
+    main function for this py file
+    """
+    img = read_img(path)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, borders = findBorderHistogram(gray)
+    if DEBUG == True:
+        showResults(path, borders)
 
-path = 'TEST_IMG/out1.jpg'
-img, borders = findBorderHistogram(path)
-lst = gen_res(img, borders)
-lst = [x.astype(np.int0) for x in lst]
-print(lst[0])
-from matplotlib import pyplot as plt
-for i in range(16):
-    plt.subplot(4, 16 // 4, i + 1)
-    plt.imshow(lst[i], cmap="gray")
-plt.show()
+    gray = cv2.dilate(gray, kernel=np.ones((2, 2)))
+    _, thres = cv2.threshold(gray, thresh=128, maxval=255, type=1)
+    lst = gen_res(thres, borders, save_path)
+    out = [x.astype(np.int0) for x in lst]
+    return out
+
+if __name__ == "__main__":
+    path = './TEST_IMG/out1.jpg'
+    out = get_each_number(path, save_path='.')
+    print(f'getting {len(out)} numbers')
+    if DEBUG == True:
+        for i in range(16):
+            plt.subplot(4, 16 // 4, i + 1)
+            plt.imshow(out[i], cmap="gray")
+        plt.show()
