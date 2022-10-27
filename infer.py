@@ -18,6 +18,7 @@ def get_model(model_save_path = './ckp/model.ckp'):
     checkpoint = torch.load(model_save_path, map_location='cpu')
     model = NNet()
     model.load_state_dict(checkpoint['model'])
+    model.eval()
     return model
 
 
@@ -34,8 +35,9 @@ def prepare_imgs(T, root_path):
 
 
 def infer(model, img):
-    pred = model(img)
-    res = pred.argmax(1)
+    with torch.no_grad():
+        pred = model(img)
+        res = pred.argmax(1)
     return res
 
 def recognize_numbers(root_path):
@@ -48,6 +50,15 @@ def recognize_numbers(root_path):
     print('----- final res -----')
     print(f'your id number is {lst}')
     print('----- final res -----')
+    return lst
 
 if __name__ == "__main__":
     recognize_numbers('./number_cut_out')
+
+    ##### test for single image ######
+    # img = Image.open('/Users/starfish/Desktop/python_proj/ML-funny-projects/rasp/tmp_run/numbers/img_1.jpg')
+    # T = get_T()
+    # img = T(img)
+    # model = get_model()
+    # res = infer(model, img)
+    # print(res)
