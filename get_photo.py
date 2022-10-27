@@ -1,8 +1,7 @@
 from picamera import PiCamera
 from time import sleep
-# test pull requests
 
-def get_photo(file_name = 'one.jpg'):
+def get_photo(file_name):
     print('starting getting photo....')
     camera = PiCamera()
 
