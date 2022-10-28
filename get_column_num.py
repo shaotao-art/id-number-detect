@@ -1,11 +1,11 @@
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
 import os
+from pre_process import gray_scale, _SHOW, contrast, thres_img
 
 DEBUG = False
 
-def read_img(path, desired = 80):
+def read_img(path, desired = 100):
     """
     read img and resize img to short edge == desired
     """
@@ -14,31 +14,8 @@ def read_img(path, desired = 80):
     min_len = min(w, h)
     scale_factor = desired / min_len
     r_w, r_h = int(scale_factor * w), int(scale_factor * h)
-    img = cv2.resize(img, dsize = [r_h, r_w])
+    img = cv2.resize(img, dsize = (r_h, r_w))
     return img
-
-# 反相二值化图像
-def accessBinary(img, threshold=128, erod_size = 3):
-    """
-    preprocess for split numbers:
-    反相 -> thres -> erod     to get clean image
-    """
-    img = 255 - img
-
-    _, thres = cv2.threshold(img, threshold, 0, cv2.THRESH_TOZERO)
-
-    if erod_size > 0:
-        kernel = np.ones((erod_size, erod_size), np.uint8)
-        erod = cv2.erode(thres, kernel, iterations=1)
-
-    if DEBUG == True:
-        cv2.imshow("origin", img)
-        cv2.waitKey()
-        cv2.imshow('thres', thres)
-        cv2.waitKey()
-        cv2.imshow('erod', erod)
-        cv2.waitKey()
-    return erod
 
 
 def extractPeek(array_vals, min_vals=10, min_rect=20):
@@ -59,18 +36,31 @@ def extractPeek(array_vals, min_vals=10, min_rect=20):
             startPoint = None
             endPoint = None
 
-
     for point in extrackPoints:
         if point[1] - point[0] < min_rect:
             extrackPoints.remove(point)
     return extrackPoints
+
+def inverse(img):
+    img = 255 - img
+    if DEBUG == True:
+        cv2.imshow("fanxiang", img)
+        cv2.waitKey()
+    return img
+
+def erode(img, kernel_size = 3):
+    erod = cv2.erode(img, np.ones((kernel_size, kernel_size)))
+    if DEBUG == True:
+        cv2.imshow("fushi", erod)
+        cv2.waitKey()
+    return erod
 
 
 def findBorderHistogram(img):
     lst = []
     width_lst = []
     out = []
-    img = accessBinary(img)
+
     # row scan
     hori_vals = np.sum(img, axis=1)
     hori_points = extractPeek(hori_vals)
@@ -104,7 +94,7 @@ def showResults(img, borders, save_res = False):
     
 
 
-def gen_res(img, borders, save_path, out_size=28):
+def gen_res(img, borders, save_path, out_size=32):
     """
     get each number in img accord to borders and save res to file
     """
@@ -112,12 +102,16 @@ def gen_res(img, borders, save_path, out_size=28):
     for i, border in enumerate(borders):
         newimg = np.zeros((out_size, out_size))
         imgCut = img[border[0][1]:border[1][1], border[0][0]:border[1][0]].copy()
+
         h, w = imgCut.shape[:2]
         ratio = h / out_size
         new_w = int(w / ratio)
         imgCut = cv2.resize(imgCut, (new_w, out_size))
         edge_w = (out_size - new_w) // 2
         newimg[:, edge_w:edge_w + new_w] = imgCut
+        if DEBUG == True:
+            cv2.imshow(f'imgCut', newimg)
+            cv2.waitKey()
         if save_path is not None:
             number_path = os.path.join(save_path, f'img_{i}.jpg')
             print(f'saving number img to {number_path}')
@@ -131,23 +125,36 @@ def get_each_number(path, save_path=None):
     main function for this py file
     """
     img = read_img(path)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img_, borders = findBorderHistogram(gray)
+    gray = gray_scale(img)
+    contr_ = contrast(gray)
+    thres_ = thres_img(contr_, thres=128)
+    invers_ = inverse(thres_)
+    erode_ = erode(invers_, kernel_size=2)
+    thres_ = thres_img(erode_)
+
+    _, borders = findBorderHistogram(thres_)
+
     if DEBUG == True:
         showResults(img, borders)
     
     
-    img_to_gen_res = cv2.dilate(img_, np.ones((3, 3)))
+    img_to_gen_res = cv2.dilate(thres_, np.ones((2, 2)))
     lst = gen_res(img_to_gen_res, borders, save_path)
     out = [x.astype(np.int0) for x in lst]
     return out
 
 if __name__ == "__main__":
-    path = './TEST_IMG/out4.jpg'
+    path = './TEST_IMG/out1.jpg'
     out = get_each_number(path, save_path='.')
-    print(f'getting {len(out)} numbers')
-    if DEBUG == True:
-        for i in range(16):
-            plt.subplot(4, 16 // 4, i + 1)
-            plt.imshow(out[i], cmap="gray")
-        plt.show()
+    # path = './TEST_IMG/out2.jpg'
+    # out = get_each_number(path, save_path='.')
+    # path = './TEST_IMG/out3.jpg'
+    # out = get_each_number(path, save_path='.')
+    # path = './TEST_IMG/out4.jpg'
+    # out = get_each_number(path, save_path='.')
+    # path = './TEST_IMG/out5.jpg'
+    # out = get_each_number(path, save_path='.')
+    # path = './TEST_IMG/out6.jpg'
+    # out = get_each_number(path, save_path='.')
+
+

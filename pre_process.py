@@ -35,7 +35,7 @@ def read_img(file_path):
     desired = 300
     scale_factor = desired / max_len
     r_w, r_h = int(scale_factor * w), int(scale_factor * h)
-    img = cv2.resize(img, dsize = [r_h, r_w])
+    img = cv2.resize(img, dsize = (r_h, r_w))
     if DEBUG == True:
         _SHOW('resized img', img)
 
@@ -47,11 +47,28 @@ def gray_scale(img):
     """
     grayscale
     """
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)   
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)  
+    if DEBUG == True:
+        _SHOW('gray', gray) 
     return gray 
 
 
-def erod(gray, kernel_size = 7):
+def blur(img):
+    blur = cv2.GaussianBlur(img, (5, 5), sigmaX=1, sigmaY=1)
+    if DEBUG == True:
+        _SHOW('blur', blur)
+    return blur
+
+def contrast(img):
+    clahe = cv2.createCLAHE(3, (8, 8))
+    dst = clahe.apply(img)
+    res = cv2.convertScaleAbs(dst, alpha = 1.7, beta = 0)
+    if DEBUG == True:
+        cv2.imshow("contrast", res)
+        cv2.waitKey()
+    return res
+
+def erod(gray, kernel_size = 9):
     """
     erode img
     """
@@ -65,7 +82,7 @@ def erod(gray, kernel_size = 7):
     return erode_Img
 
 
-def thres_img(img, thres = 100):
+def thres_img(img, thres = 128):
     """
     threshold img to get binary image
     """
@@ -99,15 +116,15 @@ def anly_contours(img, contours):
     res_lst = []
     for cnt in contours:
         cnt_len = cv2.arcLength(cnt, True) #计算轮廓周长
-        cnt = cv2.approxPolyDP(cnt, 0.02*cnt_len, True) #多边形逼近
+        cnt = cv2.approxPolyDP(cnt, 0.03*cnt_len, True) #多边形逼近
         # if len(cnt) == 4 and cv2.isContourConvex(cnt) == True:
-        if len(cnt) == 4:
+        if len(cnt) < 6 and cv2.isContourConvex(cnt) == True and cv2.contourArea(cnt) > 500:
             res_lst.append(cnt)
     
-    if DEBUG == True:
-        for cnt in res_lst:
-            res = cv2.drawContours(img, [cnt], -1, (250, 250, 255), 1)
-        _SHOW('processed contours img', res)
+            if DEBUG == True:
+                    print(len(cnt))
+                    res = cv2.drawContours(img, [cnt], -1, (250, 250, 255), 1)
+                    _SHOW(f'pic {len(cnt)}', res)
 
     print(f'get final {len(res_lst)} contours')
     return res_lst
@@ -117,44 +134,36 @@ def get_id_number_contour(cnt_lst, img):
     """
     get rectangle for id number according to w/h ratio
     """
-    max_ratio = -1
+    min_dist = 100
 
     w, h = img.shape[:2]
-    lst = []
+    res = None
     for i, cnt in enumerate(cnt_lst):
+        num_p = len(cnt)
         # 先是列 再是行
-        p_s = np.zeros((4, 2), dtype=np.int16)
+        p_s = np.zeros((num_p, 2), dtype=np.int16)
         
-        p0 = cnt[0][0]
-        p1 = cnt[1][0]
-        p2 = cnt[2][0]
-        p3 = cnt[3][0]
-        p_s[0] = p0
-        p_s[1] = p1
-        p_s[2] = p2
-        p_s[3] = p3
-        
+        for i in range(num_p):
+            p_s[i] = cnt[i]
+
         # left
         left = np.min(p_s[:, 0])
         right = np.max(p_s[:, 0])
         up = np.min(p_s[:, 1])
         down = np.max(p_s[:, 1])
         ratio = abs(right - left) / abs(down - up)
+        if DEBUG == True:
+            print(f"getting ratio {ratio}")
+            cv2.rectangle(img, [left, up], [right, down], (111, 0, 255), 2)
+            _SHOW('id number rectange', img)
+        
+        corner_points = [up/h, down/h, left/w, right/w]
 
-        lst.append([up/h, down/h, left/w, right/w])
+        if abs(ratio - 9) < min_dist:
+            min_dist = abs(ratio - 9)
+            res = corner_points
 
-        if ratio > max_ratio:
-            max_ratio = ratio
-            max_idx = i
-
-    if DEBUG == True:
-        up, down, left, right = int(lst[max_idx][0] * h), int(lst[max_idx][1] * h), int(lst[max_idx][2] * w), int(lst[max_idx][3] * w)
-        cv2.rectangle(img, [left, up], [right, down], (111, 0, 255), 2)
-        _SHOW('id number rectange', img)
-
-    return lst[max_idx]
-
-
+    return res
 
 def high_resolution_number(file_path, theta, ratio_lst, save_path):
     """
@@ -197,20 +206,28 @@ def get_numbers(file_path, save_path, use_rotate = False):
     main function for this py file
     """
     img = read_img(file_path)
-    gray = gray_scale(img)
     if use_rotate == True:
-        theta = get_rotate_img_degree(gray)
+        theta = get_rotate_img_degree(img)
     else:
         theta = 0
-    gray = rotate_img(gray, theta)
-    rotated_img = rotate_img(img, theta)
-    eroded_img = erod(gray)
-    binary_img = thres_img(eroded_img)
+    rotated_ = rotate_img(img, theta)
+    gray_ = gray_scale(rotated_)
+    contr_ = contrast(gray_)
+    thres_1 = thres_img(contr_, thres=90)
+    eroded_img = erod(thres_1, kernel_size=9)
+    binary_img = thres_img(eroded_img, thres=128)
+
     contours = get_contours(binary_img)
+    rotated_img = rotate_img(img, theta)
     cnt_lst = anly_contours(rotated_img, contours)
     ratio_lst = get_id_number_contour(cnt_lst, rotated_img)
     high_resolution_number(file_path, theta, ratio_lst, save_path)
 
 
 if __name__ == "__main__": 
-    get_numbers('./TEST_IMG/sample.jpg', './TEST_IMG/sample_out.jpg')
+    get_numbers('./TEST_IMG/test1.jpg', './out1.jpg')
+    # get_numbers('./TEST_IMG/test2.jpg', './out2.jpg')
+    # get_numbers('./TEST_IMG/test3.jpg', './out3.jpg')
+    # get_numbers('./TEST_IMG/test4.jpg', './out4.jpg')
+    # get_numbers('./TEST_IMG/test5.jpg', './out5.jpg')
+    # get_numbers('./TEST_IMG/test6.jpg', './out6.jpg')
