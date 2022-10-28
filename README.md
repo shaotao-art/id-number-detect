@@ -35,7 +35,6 @@ python run.py -p ./test_imgs/sample.jpg -mp ./model.ckp
 ## 要点提示
 1. 使用深度学习对身份证号码的印刷体进行识别，训练数据的获取方式是：通过字体渲染自己生成数据,而不是收集数据，详见`gen_fake_sample.py`。
 2. 若要了解代码流程中 1， 2 步的具体流程，在`pre_process.py`, `get_column_num.py` 中将参数`DEBUG`改为`True`即可，届时便可查看代码执行过程中所产生的图片。
-3. `get_photo.py` 为树莓派拍照的代码，大家可以不用管。
 
 ## TODO
 1. 添加其他信息，如姓名、地址等信息的识别
