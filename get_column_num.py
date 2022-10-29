@@ -1,9 +1,8 @@
 import cv2
 import numpy as np
 import os
-from pre_process import gray_scale, _SHOW, contrast, thres_img
+from utils import DEBUG, gray_scale, contrast, thres_img, inverse, erode, _SHOW
 
-DEBUG = False
 
 def read_img(path, desired = 100):
     """
@@ -41,20 +40,6 @@ def extractPeek(array_vals, min_vals=10, min_rect=20):
             extrackPoints.remove(point)
     return extrackPoints
 
-def inverse(img):
-    img = 255 - img
-    if DEBUG == True:
-        cv2.imshow("fanxiang", img)
-        cv2.waitKey()
-    return img
-
-def erode(img, kernel_size = 3):
-    erod = cv2.erode(img, np.ones((kernel_size, kernel_size)))
-    if DEBUG == True:
-        cv2.imshow("fushi", erod)
-        cv2.waitKey()
-    return erod
-
 
 def findBorderHistogram(img):
     lst = []
@@ -84,11 +69,10 @@ def findBorderHistogram(img):
 
 
 def showResults(img, borders, save_res = False):
-    for i, border in enumerate(borders):
+    for _, border in enumerate(borders):
         cv2.rectangle(img, border[0], border[1], (0, 0, 255))
     
-    cv2.imshow('show res', img)
-    cv2.waitKey(0)
+    _SHOW('show res', img)
     if save_res == True:
         cv2.imwrite('./number_cut.jpg', img)
     
@@ -110,8 +94,7 @@ def gen_res(img, borders, save_path, out_size=32):
         edge_w = (out_size - new_w) // 2
         newimg[:, edge_w:edge_w + new_w] = imgCut
         if DEBUG == True:
-            cv2.imshow(f'imgCut', newimg)
-            cv2.waitKey()
+            _SHOW('img cut', newimg)
         if save_path is not None:
             number_path = os.path.join(save_path, f'img_{i}.jpg')
             print(f'saving number img to {number_path}')
@@ -144,8 +127,8 @@ def get_each_number(path, save_path=None):
     return out
 
 if __name__ == "__main__":
-    path = './TEST_IMG/out1.jpg'
-    out = get_each_number(path, save_path='.')
+    # path = './TEST_IMG/out1.jpg'
+    # out = get_each_number(path, save_path='.')
     # path = './TEST_IMG/out2.jpg'
     # out = get_each_number(path, save_path='.')
     # path = './TEST_IMG/out3.jpg'
@@ -154,7 +137,7 @@ if __name__ == "__main__":
     # out = get_each_number(path, save_path='.')
     # path = './TEST_IMG/out5.jpg'
     # out = get_each_number(path, save_path='.')
-    # path = './TEST_IMG/out6.jpg'
-    # out = get_each_number(path, save_path='.')
+    path = './TEST_IMG/out6.jpg'
+    out = get_each_number(path, save_path='.')
 
 
